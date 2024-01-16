@@ -1,0 +1,149 @@
+apiVersion: tenant.kubesphere.io/v1alpha1
+kind: Workspace
+metadata:
+  finalizers:
+    - finalizers.tenant.kubesphere.io
+  name: noops
+spec:
+  manager: admin
+status: {}
+
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: DevOpsProject
+metadata:
+  annotations:
+    devopsproject.devops.kubesphere.io/syncstatus: successful
+    devopsproject.devops.kubesphere.io/synctime: '2024-01-16 12:47:21.993453843 +0000 UTC m=+1616.121834372'
+    kubesphere.io/creator: admin
+  finalizers:
+    - devopsproject.finalizers.kubesphere.io
+  generateName: devops-0
+  labels:
+    kubesphere.io/workspace: noops
+  name: devops-0gm92g
+spec:
+  argo:
+    clusterResourceWhitelist:
+      - group: '*'
+        kind: '*'
+    destinations:
+      - namespace: '*'
+        server: '*'
+    sourceRepos:
+      - '*'
+status:
+  adminNamespace: devops-0gm92g
+
+
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+    pipeline.devops.kubesphere.io/jenkins-metadata: >-
+      {"weatherScore":40,"estimatedDurationInMillis":19871,"parameters":[{"name":"GIT_COMMIT","type":"string","value":"","defaultParameterValue":{"name":"GIT_COMMIT","value":""}}],"name":"pipou"}
+    pipeline.devops.kubesphere.io/jenkinsfile: >-
+      {"pipeline":{"agent":{"arguments":[{"key":"label","value":{"isLiteral":true,"value":"ubuntu"}}],"type":"node"},"environment":[{"key":"gitCommit","value":{"isLiteral":true,"value":""}}],"stages":[{"agent":{"type":"none"},"branches":[{"name":"default","steps":[{"arguments":[{"key":"url","value":{"isLiteral":true,"value":"https://github.com/mohamed-rafraf/nodeapp_test"}},{"key":"credentialsId","value":{"isLiteral":true,"value":""}},{"key":"branch","value":{"isLiteral":true,"value":"master"}},{"key":"changelog","value":{"isLiteral":true,"value":true}},{"key":"poll","value":{"isLiteral":true,"value":false}}],"name":"git"},{"arguments":[{"key":"scriptBlock","value":{"isLiteral":true,"value":"gitCommit
+      = sh(script: 'git rev-parse --short HEAD', returnStdout:
+      true).trim()\n          sh \"echo hello world
+      ${gitCommit}\""}}],"name":"script"}]}],"name":"Clone
+      Repo"},{"agent":{"type":"none"},"branches":[{"name":"default","steps":[{"arguments":[{"key":"scriptBlock","value":{"isLiteral":true,"value":"sh
+      \"docker build . -t
+      mohamedrafraf/nodeapp_test:${gitCommit}\""}}],"name":"script"}]}],"name":"Build
+      "},{"agent":{"type":"none"},"branches":[{"name":"default","steps":[{"arguments":{"isLiteral":false,"value":"${[usernamePassword(credentialsId:
+      'dockerhub-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable:
+      'DOCKER_USERNAME')]}"},"children":[{"arguments":[{"key":"script","value":{"isLiteral":false,"value":"\"docker
+      login -u ${DOCKER_USERNAME} -p
+      ${DOCKER_PASSWORD}\""}}],"name":"sh"},{"arguments":[{"key":"script","value":{"isLiteral":false,"value":"\"docker
+      push
+      mohamedrafraf/nodeapp_test:${gitCommit}\""}}],"name":"sh"}],"name":"withCredentials"}]}],"name":"Push
+      Container"},{"agent":{"type":"none"},"branches":[{"name":"default","steps":[{"arguments":{"isLiteral":false,"value":"${[kubeconfigContent(credentialsId:
+      'kubeconfig-id', variable:
+      'KUBECONFIG')]}"},"children":[{"arguments":[{"key":"script","value":{"isLiteral":true,"value":"mkdir
+      -p /home/cloud_user/.kube\necho ${KUBECONFIG} | base64 -d \u003e
+      /home/cloud_user/.kube/config"}}],"name":"sh"}],"name":"withCredentials"},{"arguments":[{"key":"script","value":{"isLiteral":false,"value":"\"ls
+      -lha \u0026\u0026 sed -i 's/\\\\\\\\\\\\$TAG_IMAGE/${gitCommit}/g'
+      deployment.yml\""}}],"name":"sh"},{"arguments":[{"key":"script","value":{"isLiteral":true,"value":"kubectl
+      apply -f deployment.yml \u0026\u0026 kubectl apply -f
+      service.yml"}}],"name":"sh"}]}],"name":"Deploy Kubernetes"}]}}
+    pipeline.devops.kubesphere.io/jenkinsfile.edit.mode: ''
+    pipeline.devops.kubesphere.io/jenkinsfile.validate: success
+    pipeline.devops.kubesphere.io/spechash: c98988dc5
+    pipeline.devops.kubesphere.io/syncstatus: successful
+  finalizers:
+    - pipeline.finalizers.kubesphere.io
+  name: pipou
+  namespace: devops-0gm92g
+spec:
+  pipeline:
+    discarder:
+      days_to_keep: '7'
+      num_to_keep: '10'
+    jenkinsfile: |-
+      pipeline {
+        agent {
+          node {
+            label 'ubuntu'
+          }
+
+        }
+        stages {
+          stage('Clone Repo') {
+            agent none
+            steps {
+              git(url: 'https://github.com/mohamed-rafraf/nodeapp_test', credentialsId: '', branch: 'master', changelog: true, poll: false)
+              script {
+                gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                sh "echo hello world ${gitCommit}"
+              }
+
+            }
+          }
+
+          stage('Build ') {
+            agent none
+            steps {
+              script {
+                sh "docker build . -t mohamedrafraf/nodeapp_test:${gitCommit}"
+              }
+
+            }
+          }
+
+          stage('Push Container') {
+            agent none
+            steps {
+              withCredentials([usernamePassword(credentialsId: 'dockerhub-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                sh "docker push mohamedrafraf/nodeapp_test:${gitCommit}"
+              }
+
+            }
+          }
+
+          stage('Deploy Kubernetes') {
+            agent none
+            steps {
+              withCredentials([kubeconfigContent(credentialsId: 'kubeconfig-id', variable: 'KUBECONFIG')]) {
+                sh '''mkdir -p /home/cloud_user/.kube
+      echo ${KUBECONFIG} | base64 -d > /home/cloud_user/.kube/config'''
+
+              }
+              sh "ls -lha && sed -i 's/\\\$TAG_IMAGE/${gitCommit}/g' deployment.yml"
+              sh 'kubectl apply -f deployment.yml && kubectl apply -f service.yml'
+            }
+          }
+
+        }
+        environment {
+          gitCommit = ''
+        }
+      }
+    name: pipou
+    parameters:
+      - name: GIT_COMMIT
+        type: string
+  type: pipeline
+status: {}
