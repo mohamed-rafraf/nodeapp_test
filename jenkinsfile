@@ -1,0 +1,59 @@
+pipeline {
+  agent {
+    node {
+      label 'ubuntu'
+    }
+
+  }
+  stages {
+    stage('Clone Repo') {
+      agent none
+      steps {
+        git(url: 'https://github.com/mohamed-rafraf/nodeapp_test', credentialsId: '', branch: 'master', changelog: true, poll: false)
+        script {
+          gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+          sh "echo hello world ${gitCommit}"
+        }
+
+      }
+    }
+
+    stage('Build ') {
+      agent none
+      steps {
+        script {
+          sh "docker build . -t mohamedrafraf/nodeapp_test:${gitCommit}"
+        }
+
+      }
+    }
+
+    stage('Push Container') {
+      agent none
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+          sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+          sh "docker push mohamedrafraf/nodeapp_test:${gitCommit}"
+        }
+
+      }
+    }
+
+    stage('Deploy Kubernetes') {
+      agent none
+      steps {
+        withCredentials([kubeconfigContent(credentialsId: 'kubeconfig-id', variable: 'KUBECONFIG')]) {
+          sh '''mkdir -p /home/cloud_user/.kube
+echo ${KUBECONFIG} | base64 -d > /home/cloud_user/.kube/config'''
+          sh "ls -lha && sed -i 's/\\\$TAG_IMAGE/${gitCommit}/g' deployment.yml"
+          sh "kubectl apply -f deployment.yml && kubectl apply -f service.yml"
+        }
+
+      }
+    }
+
+  }
+  environment {
+    gitCommit = ''
+  }
+}
